@@ -1,0 +1,172 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global default-deny safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidHex(val) {
+      return val is string && val.matches('^#[0-9A-Fa-f]{6}$');
+    }
+
+    function isKnownCarId(carId) {
+      return carId in ['viper_gtr', 'apex_phantom', 'titan_muscle', 'cyber_drift', 'hyperion_proto', 'solaris_v12'];
+    }
+
+    function isKnownTrackId(trackId) {
+      return trackId in ['neon_tokyo', 'alpine_pass', 'desert_canyon'];
+    }
+
+    function isValidPlayerProfile(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 40 &&
+             data.credits is int && data.credits >= 0 && data.credits <= 100000000 &&
+             isKnownCarId(data.selectedCarId) &&
+             data.totalRaces is int && data.totalRaces >= 0 && data.totalRaces <= 1000000 &&
+             data.totalWins is int && data.totalWins >= 0 && data.totalWins <= 1000000 &&
+             data.unlockedCarIds is list && data.unlockedCarIds.size() >= 1 && data.unlockedCarIds.size() <= 20 &&
+             data.unlockedCarIds[0] is string &&
+             (!('bestLapNeonMs' in data) || (data.bestLapNeonMs is int && data.bestLapNeonMs > 0 && data.bestLapNeonMs <= 3600000)) &&
+             (!('bestLapAlpineMs' in data) || (data.bestLapAlpineMs is int && data.bestLapAlpineMs > 0 && data.bestLapAlpineMs <= 3600000)) &&
+             (!('bestLapDesertMs' in data) || (data.bestLapDesertMs is int && data.bestLapDesertMs > 0 && data.bestLapDesertMs <= 3600000)) &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidCarSetup(data, userId, carId) {
+      return data.userId is string && data.userId == userId &&
+             data.carId is string && data.carId == carId && isKnownCarId(data.carId) &&
+             isValidHex(data.paintColorHex) &&
+             data.paintFinish in ['GLOSS', 'METALLIC', 'MATTE', 'PEARL'] &&
+             data.rimStyle in ['SPORT_5', 'TURBINE_10', 'DEEP_DISH', 'CARBON_AERO'] &&
+             isValidHex(data.rimColorHex) &&
+             data.spoilerStyle in ['NONE', 'LIP', 'GT_WING', 'SWAN_NECK'] &&
+             (data.underglowHex == 'NONE' || isValidHex(data.underglowHex)) &&
+             data.engineLevel is int && data.engineLevel >= 1 && data.engineLevel <= 5 &&
+             data.turboLevel is int && data.turboLevel >= 1 && data.turboLevel <= 5 &&
+             data.tiresLevel is int && data.tiresLevel >= 1 && data.tiresLevel <= 5 &&
+             data.nitroLevel is int && data.nitroLevel >= 1 && data.nitroLevel <= 5 &&
+             data.createdAt is timestamp && data.createdAt <= request.time &&
+             data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidRaceResult(data, userId) {
+      return data.userId is string && data.userId == userId &&
+             isKnownTrackId(data.trackId) &&
+             isKnownCarId(data.carId) &&
+             data.position is int && data.position >= 1 && data.position <= 4 &&
+             data.totalTimeMs is int && data.totalTimeMs > 0 && data.totalTimeMs <= 3600000 &&
+             data.bestLapMs is int && data.bestLapMs > 0 && data.bestLapMs <= 3600000 &&
+             data.creditsEarned is int && data.creditsEarned >= 0 && data.creditsEarned <= 100000 &&
+             data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId) && isValidId(userId);
+      allow list: if isOwner(userId);
+
+      allow create: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       incoming().keys().hasAll([
+                         'userId', 'displayName', 'credits', 'selectedCarId',
+                         'totalRaces', 'totalWins', 'unlockedCarIds', 'createdAt', 'updatedAt'
+                       ]) &&
+                       incoming().keys().hasOnly([
+                         'userId', 'displayName', 'credits', 'selectedCarId',
+                         'totalRaces', 'totalWins', 'bestLapNeonMs', 'bestLapAlpineMs',
+                         'bestLapDesertMs', 'unlockedCarIds', 'createdAt', 'updatedAt'
+                       ]) &&
+                       isValidPlayerProfile(incoming(), userId);
+
+      allow update: if isOwner(userId) &&
+                       isValidId(userId) &&
+                       isValidPlayerProfile(incoming(), userId) &&
+                       incoming().userId == existing().userId &&
+                       incoming().createdAt == existing().createdAt &&
+                       incoming().diff(existing()).affectedKeys().hasOnly([
+                         'displayName', 'credits', 'selectedCarId',
+                         'totalRaces', 'totalWins', 'bestLapNeonMs', 'bestLapAlpineMs',
+                         'bestLapDesertMs', 'unlockedCarIds', 'updatedAt'
+                       ]);
+
+      allow delete: if isOwner(userId) && isValidId(userId);
+
+      match /garage/{carId} {
+        allow get: if isOwner(userId) && isValidId(carId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(carId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'carId', 'paintColorHex', 'paintFinish',
+                           'rimStyle', 'rimColorHex', 'spoilerStyle', 'underglowHex',
+                           'engineLevel', 'turboLevel', 'tiresLevel', 'nitroLevel',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'carId', 'paintColorHex', 'paintFinish',
+                           'rimStyle', 'rimColorHex', 'spoilerStyle', 'underglowHex',
+                           'engineLevel', 'turboLevel', 'tiresLevel', 'nitroLevel',
+                           'createdAt', 'updatedAt'
+                         ]) &&
+                         isValidCarSetup(incoming(), userId, carId);
+
+        allow update: if isOwner(userId) &&
+                         isValidId(carId) &&
+                         isValidCarSetup(incoming(), userId, carId) &&
+                         incoming().userId == existing().userId &&
+                         incoming().carId == existing().carId &&
+                         incoming().createdAt == existing().createdAt &&
+                         incoming().diff(existing()).affectedKeys().hasOnly([
+                           'paintColorHex', 'paintFinish', 'rimStyle', 'rimColorHex',
+                           'spoilerStyle', 'underglowHex', 'engineLevel', 'turboLevel',
+                           'tiresLevel', 'nitroLevel', 'updatedAt'
+                         ]);
+
+        allow delete: if isOwner(userId) && isValidId(carId);
+      }
+
+      match /races/{raceId} {
+        allow get: if isOwner(userId) && isValidId(raceId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId) &&
+                         isValidId(raceId) &&
+                         incoming().keys().hasAll([
+                           'userId', 'trackId', 'carId', 'position',
+                           'totalTimeMs', 'bestLapMs', 'creditsEarned', 'createdAt'
+                         ]) &&
+                         incoming().keys().hasOnly([
+                           'userId', 'trackId', 'carId', 'position',
+                           'totalTimeMs', 'bestLapMs', 'creditsEarned', 'createdAt'
+                         ]) &&
+                         isValidRaceResult(incoming(), userId);
+
+        allow update, delete: if false;
+      }
+    }
+  }
+}

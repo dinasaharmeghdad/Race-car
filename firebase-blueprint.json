@@ -1,0 +1,221 @@
+{
+  "entities": {
+    "PlayerProfile": {
+      "title": "PlayerProfile",
+      "description": "Authenticated player career profile, credits, unlocked vehicles, and circuit lap records.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Racer display name."
+        },
+        "credits": {
+          "type": "integer",
+          "description": "In-game racing credits earned from races."
+        },
+        "selectedCarId": {
+          "type": "string",
+          "description": "Currently active vehicle identifier."
+        },
+        "totalRaces": {
+          "type": "integer",
+          "description": "Total completed races."
+        },
+        "totalWins": {
+          "type": "integer",
+          "description": "Total first-place victories."
+        },
+        "bestLapNeonMs": {
+          "type": "integer",
+          "description": "Best lap time in milliseconds on Neon Tokyo circuit."
+        },
+        "bestLapAlpineMs": {
+          "type": "integer",
+          "description": "Best lap time in milliseconds on Alpine Pass circuit."
+        },
+        "bestLapDesertMs": {
+          "type": "integer",
+          "description": "Best lap time in milliseconds on Desert Canyon circuit."
+        },
+        "unlockedCarIds": {
+          "type": "array",
+          "description": "Bounded list of unlocked vehicle IDs."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of profile creation (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of latest update (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": [
+        "userId",
+        "displayName",
+        "credits",
+        "selectedCarId",
+        "totalRaces",
+        "totalWins",
+        "unlockedCarIds",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "CarSetup": {
+      "title": "CarSetup",
+      "description": "Visual customization and performance tuning configuration for a specific vehicle.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID."
+        },
+        "carId": {
+          "type": "string",
+          "description": "Vehicle catalog identifier."
+        },
+        "paintColorHex": {
+          "type": "string",
+          "description": "Body paint hex color string (#RRGGBB)."
+        },
+        "paintFinish": {
+          "type": "string",
+          "enum": ["GLOSS", "METALLIC", "MATTE", "PEARL"],
+          "description": "Body paint shader finish."
+        },
+        "rimStyle": {
+          "type": "string",
+          "enum": ["SPORT_5", "TURBINE_10", "DEEP_DISH", "CARBON_AERO"],
+          "description": "3D wheel rim geometry style."
+        },
+        "rimColorHex": {
+          "type": "string",
+          "description": "Wheel rim hex color string (#RRGGBB)."
+        },
+        "spoilerStyle": {
+          "type": "string",
+          "enum": ["NONE", "LIP", "GT_WING", "SWAN_NECK"],
+          "description": "3D rear spoiler geometry style."
+        },
+        "underglowHex": {
+          "type": "string",
+          "description": "Neon underglow hex color (#RRGGBB) or NONE."
+        },
+        "engineLevel": {
+          "type": "integer",
+          "description": "Engine tuning stage (1 to 5)."
+        },
+        "turboLevel": {
+          "type": "integer",
+          "description": "Turbo tuning stage (1 to 5)."
+        },
+        "tiresLevel": {
+          "type": "integer",
+          "description": "Tires & suspension stage (1 to 5)."
+        },
+        "nitroLevel": {
+          "type": "integer",
+          "description": "Nitrous boost stage (1 to 5)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of setup creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of setup modification."
+        }
+      },
+      "required": [
+        "userId",
+        "carId",
+        "paintColorHex",
+        "paintFinish",
+        "rimStyle",
+        "rimColorHex",
+        "spoilerStyle",
+        "underglowHex",
+        "engineLevel",
+        "turboLevel",
+        "tiresLevel",
+        "nitroLevel",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "RaceResult": {
+      "title": "RaceResult",
+      "description": "Completed 3D race telemetry and reward summary.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID."
+        },
+        "trackId": {
+          "type": "string",
+          "enum": ["neon_tokyo", "alpine_pass", "desert_canyon"],
+          "description": "Circuit identifier."
+        },
+        "carId": {
+          "type": "string",
+          "description": "Vehicle used in the race."
+        },
+        "position": {
+          "type": "integer",
+          "description": "Finishing position (1 to 4)."
+        },
+        "totalTimeMs": {
+          "type": "integer",
+          "description": "Total race completion time in milliseconds."
+        },
+        "bestLapMs": {
+          "type": "integer",
+          "description": "Fastest lap time in milliseconds."
+        },
+        "creditsEarned": {
+          "type": "integer",
+          "description": "Credits rewarded."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of race completion."
+        }
+      },
+      "required": [
+        "userId",
+        "trackId",
+        "carId",
+        "position",
+        "totalTimeMs",
+        "bestLapMs",
+        "creditsEarned",
+        "createdAt"
+      ]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/PlayerProfile" },
+      "description": "User-owned career profile and unlocked cars."
+    },
+    "/users/{userId}/garage/{carId}": {
+      "schema": { "$ref": "#/entities/CarSetup" },
+      "description": "User-owned 3D vehicle customization and upgrade configurations."
+    },
+    "/users/{userId}/races/{raceId}": {
+      "schema": { "$ref": "#/entities/RaceResult" },
+      "description": "User-owned race completion history."
+    }
+  }
+}

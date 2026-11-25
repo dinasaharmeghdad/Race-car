@@ -1,0 +1,6 @@
+{
+  "name": "Apex Racing",
+  "description": "High-graphics 3D car racing game with diverse vehicles, real-time OpenGL ES 3D rendering, and deep vehicle customization.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

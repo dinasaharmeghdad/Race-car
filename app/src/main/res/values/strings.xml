@@ -1,0 +1,21 @@
+<resources>
+    <string name="app_name">Apex Racing</string>
+    <string name="tagline">مسابقات سه‌بعدی و تیونینگ حرفه‌ای خودرو</string>
+    <string name="sign_in_google">ورود با حساب گوگل</string>
+    <string name="sign_out">خروج از حساب</string>
+    <string name="nav_garage">گاراژ</string>
+    <string name="nav_customize">شخصی‌سازی</string>
+    <string name="nav_race">مسابقه</string>
+    <string name="nav_records">رکوردها</string>
+    <string name="start_race">شروع مسابقه سه‌بعدی</string>
+    <string name="select_car">انتخاب خودرو</string>
+    <string name="selected_badge">انتخاب‌شده</string>
+    <string name="unlock_car">خرید خودرو</string>
+    <string name="save_setup">ذخیره تغییرات</string>
+    <string name="upgrade_part">ارتقا</string>
+    <string name="max_level">حداکثر سطح</string>
+    <string name="pause_race">توقف</string>
+    <string name="resume_race">ادامه مسابقه</string>
+    <string name="restart_race">شروع مجدد</string>
+    <string name="exit_to_garage">بازگشت به گاراژ</string>
+</resources>
